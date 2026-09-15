@@ -1,0 +1,334 @@
+@import "tailwindcss";
+
+/* class-based dark mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   JOHAR — Neo-brutalist design system
+   Bold black borders, hard offset shadows, bright accents,
+   chunky type. Civic + Jharkhand identity.
+   ============================================================ */
+
+@theme {
+  /* JOHAR brand palette (brightened for neobrutalism) */
+  --color-johar-green-50: #e7f4e2;
+  --color-johar-green-100: #cdeac3;
+  --color-johar-green-600: #1f9d55;
+  --color-johar-green-700: #157347;
+
+  --color-johar-earth-50: #fff8ec;
+  --color-johar-earth-500: #f5a524;
+  --color-johar-earth-700: #b45309;
+
+  /* neo-brutalist accents */
+  --color-nb-yellow: #ffd23f;
+  --color-nb-pink: #ff90e8;
+  --color-nb-blue: #8ce3ff;
+  --color-nb-cream: #fffdf4;
+  --color-nb-ink: #111111;
+
+  /* square off every Tailwind radius globally — signature brutalist look */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+
+  --font-sans: "Space Grotesk", "Noto Sans Devanagari", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo Black", "Space Grotesk", "Noto Sans Devanagari", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-nb-cream);
+  color: var(--color-nb-ink);
+  /* subtle dot grid backdrop */
+  background-image: radial-gradient(#11111114 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* ---------- global element restyling ---------- */
+
+@layer base {
+  button {
+    border: 2px solid var(--color-nb-ink);
+    box-shadow: 3px 3px 0 var(--color-nb-ink);
+    border-radius: 0 !important;
+    transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+  }
+  button:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 var(--color-nb-ink);
+  }
+  button:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--color-nb-ink);
+  }
+
+  input,
+  select,
+  textarea {
+    border: 2px solid var(--color-nb-ink) !important;
+    border-radius: 0 !important;
+    box-shadow: 2px 2px 0 var(--color-nb-ink);
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    box-shadow: 4px 4px 0 var(--color-nb-ink), inset 0 0 0 100vmax rgba(255, 210, 63, 0.12);
+  }
+}
+
+/* bordered, rounded boxes anywhere in the app become hard-shadow cards */
+.rounded-xl.border,
+.rounded-lg.border,
+.border.rounded-lg,
+.border.rounded-xl {
+  box-shadow: 4px 4px 0 var(--color-nb-ink);
+  border-width: 2px !important;
+  border-color: var(--color-nb-ink) !important;
+}
+
+table {
+  border-collapse: collapse;
+}
+.overflow-x-auto.rounded-xl,
+.overflow-x-auto.rounded-lg {
+  border-width: 2px !important;
+  border-color: var(--color-nb-ink) !important;
+  box-shadow: 4px 4px 0 var(--color-nb-ink);
+}
+
+img {
+  border: 2px solid var(--color-nb-ink);
+}
+
+/* ---------- dark mode ----------
+   Strategy: ink stays BLACK for borders/shadows (authentic neobrutalism,
+   keeps dark text readable on yellow/pink/blue accents). Surfaces get
+   layered dark tones so black shadows remain subtly visible:
+   body #141412 < cards #23221c < raised #2b2a23 */
+
+.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #141412;
+  color: #ece9dd;
+  background-image: radial-gradient(#ffffff0f 1px, transparent 1px);
+}
+
+/* surfaces */
+html.dark .bg-white {
+  background-color: #23221c !important;
+}
+html.dark .bg-white\/85,
+html.dark .bg-white\/90 {
+  background-color: rgba(35, 34, 28, 0.92) !important;
+  color: #e6e3d7;
+}
+html.dark header.bg-white,
+html.dark nav.bg-white {
+  background-color: #1b1a16 !important;
+}
+html.dark .bg-nb-cream {
+  background-color: #141412 !important;
+}
+html.dark footer.bg-nb-ink {
+  background-color: #0c0c0a !important;
+}
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #23221c;
+  color: #ece9dd;
+}
+html.dark ::placeholder {
+  color: #7a7768;
+}
+
+/* text scale */
+html.dark .text-gray-900 { color: #f4f1e5 !important; }
+html.dark .text-gray-800 { color: #e6e3d7 !important; }
+html.dark .text-gray-700 { color: #d2cfbf !important; }
+html.dark .text-gray-600 { color: #b3b09f !important; }
+html.dark .text-gray-500 { color: #96937f !important; }
+html.dark .text-gray-400 { color: #75736466; }
+html.dark .text-gray-400 { color: #757364 !important; }
+
+/* neutral fills */
+html.dark .bg-gray-50 { background-color: #26251f !important; }
+html.dark .bg-gray-100 { background-color: #2e2d25 !important; }
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-gray-50\/60:hover,
+html.dark .hover\:bg-gray-100:hover {
+  background-color: #2e2d25 !important;
+}
+html.dark .border-gray-100 { border-color: #35342b !important; }
+html.dark .border-gray-200 { border-color: #403f35 !important; }
+html.dark .border-gray-300 { border-color: #4f4d43 !important; }
+html.dark .border-dashed.border-gray-300 {
+  border-color: #55534a !important;
+}
+
+/* brand tints → deep muted versions */
+html.dark .bg-johar-green-50,
+html.dark .bg-johar-green-50\/50,
+html.dark .bg-johar-green-50\/40,
+html.dark .bg-johar-green-100 {
+  background-color: #17301f !important;
+}
+html.dark .text-johar-green-700 {
+  color: #7fd699 !important;
+}
+html.dark .border-johar-green-600\/20,
+html.dark .border-johar-green-600\/30 {
+  border-color: #2e5c3c !important;
+}
+html.dark .bg-johar-earth-50,
+html.dark .bg-johar-earth-50\/50 {
+  background-color: #27200f !important;
+}
+html.dark .text-johar-earth-700 {
+  color: #f0b45c !important;
+}
+
+/* status / feedback tints */
+html.dark .bg-red-50 { background-color: #341c1c !important; }
+html.dark .bg-red-100 { background-color: #3f2020 !important; }
+html.dark .text-red-600, html.dark .text-red-700 { color: #ff9b8a !important; }
+html.dark .border-red-200, html.dark .border-red-300 { border-color: #6b3030 !important; }
+html.dark .hover\:bg-red-50:hover { background-color: #341c1c !important; }
+
+html.dark .bg-green-50 { background-color: #182a1c !important; }
+html.dark .bg-green-100 { background-color: #1d3322 !important; }
+html.dark .text-green-700 { color: #8fd9a5 !important; }
+
+html.dark .bg-blue-50 { background-color: #17242e !important; }
+html.dark .bg-blue-100 { background-color: #1c2c38 !important; }
+html.dark .text-blue-700 { color: #8ecdf0 !important; }
+
+html.dark .bg-purple-50,
+html.dark .bg-purple-50\/40 {
+  background-color: #241b2e !important;
+}
+html.dark .bg-purple-100 { background-color: #2c2138 !important; }
+html.dark .text-purple-700 { color: #cdaaf0 !important; }
+html.dark .border-purple-100, html.dark .border-purple-200 {
+  border-color: #453457 !important;
+}
+
+html.dark .bg-amber-50 { background-color: #2b2210 !important; }
+html.dark .bg-amber-100 { background-color: #332914 !important; }
+html.dark .text-amber-600, html.dark .text-amber-700,
+html.dark .text-amber-800 { color: #ffc95e !important; }
+html.dark .border-amber-200, html.dark .border-amber-300 {
+  border-color: #5c4a1e !important;
+}
+
+html.dark .bg-indigo-50 { background-color: #1d1e31 !important; }
+html.dark .text-indigo-700 { color: #a8b0f5 !important; }
+html.dark .bg-cyan-50 { background-color: #14262b !important; }
+html.dark .text-cyan-700 { color: #86dbe8 !important; }
+
+/* neo utilities adapt */
+html.dark .nb-card {
+  background-color: #23221c;
+  /* keep black shadow visible against the lighter card edge */
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.9);
+}
+html.dark .nb-btn-accent,
+html.dark .nb-sticker {
+  color: #111111;
+}
+html.dark .nb-highlight {
+  /* dimmer highlight so light text stays readable over it */
+  background-image: linear-gradient(transparent 55%, rgba(255, 210, 63, 0.45) 55%, rgba(255, 210, 63, 0.45) 92%, transparent 92%);
+}
+
+/* ---------- reusable neo-brutalist utilities ---------- */
+
+@layer utilities {
+  .nb-card {
+    border: 3px solid var(--color-nb-ink);
+    box-shadow: 6px 6px 0 var(--color-nb-ink);
+    background-color: white;
+    border-radius: 0;
+  }
+  .nb-card-hover {
+    transition: transform 140ms ease, box-shadow 140ms ease;
+  }
+  .nb-card-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 9px 9px 0 var(--color-nb-ink);
+  }
+
+  .nb-btn-primary {
+    background-color: var(--color-johar-green-700);
+    color: white;
+    font-weight: 700;
+    border: 3px solid var(--color-nb-ink);
+    box-shadow: 5px 5px 0 var(--color-nb-ink);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .nb-btn-primary:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 var(--color-nb-ink);
+  }
+  .nb-btn-primary:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--color-nb-ink);
+  }
+
+  .nb-btn-accent {
+    background-color: var(--color-nb-yellow);
+    color: var(--color-nb-ink);
+    font-weight: 700;
+    border: 3px solid var(--color-nb-ink);
+    box-shadow: 5px 5px 0 var(--color-nb-ink);
+  }
+
+  .nb-badge {
+    display: inline-block;
+    border: 2px solid var(--color-nb-ink);
+    box-shadow: 2px 2px 0 var(--color-nb-ink);
+    padding: 0.125rem 0.625rem;
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background-color: white;
+  }
+
+  .nb-sticker {
+    display: inline-block;
+    border: 3px solid var(--color-nb-ink);
+    box-shadow: 4px 4px 0 var(--color-nb-ink);
+    transform: rotate(-2deg);
+    font-family: var(--font-display);
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .nb-highlight {
+    background-image: linear-gradient(transparent 55%, var(--color-nb-yellow) 55%, var(--color-nb-yellow) 92%, transparent 92%);
+    padding: 0 0.15em;
+  }
+
+  .nb-hero-frame {
+    border: 4px solid var(--color-nb-ink);
+    box-shadow: 10px 10px 0 var(--color-nb-ink);
+  }
+}
