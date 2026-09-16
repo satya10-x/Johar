@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://johar-qtso.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
