@@ -98,6 +98,35 @@ const duplicateCheckSchema = new Schema(
   { _id: false }
 );
 
+const voiceInputSchema = new Schema(
+  {
+    enabled: {
+      type: Boolean,
+      default: false,
+    },
+    audioUrl: {
+      type: String,
+    },
+    originalTranscript: {
+      type: String,
+      trim: true,
+    },
+    originalLanguage: {
+      type: String,
+      trim: true,
+    },
+    standardizedText: {
+      type: String,
+      trim: true,
+    },
+    standardizedLanguage: {
+      type: String,
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
 export const AI_STATUSES = ['pending', 'processing', 'completed', 'failed'];
 
 const challengeSchema = new Schema(
@@ -257,6 +286,10 @@ const challengeSchema = new Schema(
     },
     duplicateCheck: {
       type: duplicateCheckSchema,
+      default: undefined,
+    },
+    voiceInput: {
+      type: voiceInputSchema,
       default: undefined,
     },
     tags: [{ type: String, lowercase: true, trim: true }],

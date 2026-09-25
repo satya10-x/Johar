@@ -92,6 +92,26 @@ function buildCreatePayload(body) {
       ? body.tags.map((t) => String(t).toLowerCase().trim()).filter(Boolean)
       : [];
   }
+  if (body.voiceInput !== undefined) {
+    let vi = body.voiceInput;
+    if (typeof vi === 'string') {
+      try {
+        vi = JSON.parse(vi);
+      } catch {
+        vi = null;
+      }
+    }
+    if (vi && typeof vi === 'object') {
+      payload.voiceInput = {
+        enabled: Boolean(vi.enabled),
+        audioUrl: vi.audioUrl ? String(vi.audioUrl).trim() : undefined,
+        originalTranscript: vi.originalTranscript ? String(vi.originalTranscript).trim() : undefined,
+        originalLanguage: vi.originalLanguage ? String(vi.originalLanguage).trim() : undefined,
+        standardizedText: vi.standardizedText ? String(vi.standardizedText).trim() : undefined,
+        standardizedLanguage: vi.standardizedLanguage ? String(vi.standardizedLanguage).trim() : undefined,
+      };
+    }
+  }
 
   return payload;
 }

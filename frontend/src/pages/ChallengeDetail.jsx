@@ -45,6 +45,7 @@ export default function ChallengeDetail() {
   const [uniMatches, setUniMatches] = useState(null);
   const [isMatching, setIsMatching] = useState(false);
   const [localDiscussion, setLocalDiscussion] = useState(null);
+  const [showVoiceDetails, setShowVoiceDetails] = useState(false);
 
   const isAuthenticated = Boolean(user);
 
@@ -219,6 +220,11 @@ export default function ChallengeDetail() {
           <span className="rounded-full bg-gray-100 px-2 py-0.5 capitalize">
             Severity: {challenge.severity}
           </span>
+          {challenge.voiceInput?.enabled && (
+            <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 font-medium text-amber-800">
+              🎙 Reported via Voice ({challenge.voiceInput.originalLanguage || 'Local'})
+            </span>
+          )}
         </div>
         <h1 className="mt-3 text-3xl font-bold">{challenge.title}</h1>
         <p className="mt-2 text-sm text-gray-500">
@@ -226,6 +232,36 @@ export default function ChallengeDetail() {
           {new Date(challenge.createdAt).toLocaleDateString()}
         </p>
       </header>
+
+      {challenge.voiceInput?.originalTranscript && (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3.5 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-amber-900 flex items-center gap-1.5">
+              <span>🎙</span> Original Voice Transcript ({challenge.voiceInput.originalLanguage}):
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowVoiceDetails((v) => !v)}
+              className="text-amber-800 font-semibold underline text-[11px]"
+            >
+              {showVoiceDetails ? 'Hide' : 'Show full transcript'}
+            </button>
+          </div>
+          {showVoiceDetails && (
+            <div className="mt-2 space-y-1.5 text-gray-800">
+              <p className="italic bg-white p-2.5 rounded border border-amber-100 whitespace-pre-wrap">
+                "{challenge.voiceInput.originalTranscript}"
+              </p>
+              {challenge.voiceInput.standardizedText && (
+                <p className="text-[11px] text-gray-600">
+                  <strong className="text-gray-700">Standardized: </strong>
+                  {challenge.voiceInput.standardizedText}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 whitespace-pre-wrap leading-relaxed text-gray-800">
         {challenge.description}

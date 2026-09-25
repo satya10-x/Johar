@@ -11,12 +11,14 @@ import industryRoutes from './industry.routes.js';
 import collaborationRequestRoutes from './collaborationRequest.routes.js';
 import adminRoutes from './admin.routes.js';
 import solutionRoutes from './solution.routes.js';
+import voiceRoutes from './voice.routes.js';
 
 const router = Router();
 
 router.use('/', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/challenges', challengeRoutes);
+router.use('/voice', voiceRoutes);
 router.use('/projects', projectRoutes);
 router.use('/milestones', milestoneRoutes);
 router.use('/discussions', discussionRoutes);

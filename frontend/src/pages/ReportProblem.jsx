@@ -4,12 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { createChallenge } from '../services/challengeService.js';
 import { CATEGORIES, DISTRICTS, LANGUAGES, SEVERITIES } from '../utils/constants.js';
 import { describeGeoError, getCurrentPosition } from '../utils/geo.js';
+import VoiceRecorder from '../components/VoiceRecorder.jsx';
 
 const inputClass =
   'mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-johar-green-700 focus:outline-none';
 
 export default function ReportProblem() {
   const navigate = useNavigate();
+
+  const [inputMode, setInputMode] = useState('manual'); // 'manual' | 'voice'
+  const [voiceDraftMeta, setVoiceDraftMeta] = useState(null);
+  const [showOriginalTranscript, setShowOriginalTranscript] = useState(true);
 
   const [form, setForm] = useState({
     title: '',
@@ -35,6 +40,34 @@ export default function ReportProblem() {
 
   function onFileChange(e, type) {
     setFiles({ ...files, [type]: Array.from(e.target.files || []) });
+  }
+
+  function handleVoiceDraftGenerated(draft) {
+    setForm((prev) => ({
+      ...prev,
+      title: draft.title || prev.title,
+      description: draft.description || prev.description,
+      category: draft.category || prev.category,
+      subCategory: draft.subCategory || prev.subCategory,
+      district: draft.district || prev.district,
+      language: draft.language || prev.language,
+      severity: draft.severity || prev.severity,
+      affectedPopulation:
+        draft.affectedPopulation != null ? String(draft.affectedPopulation) : prev.affectedPopulation,
+      tags: draft.tags?.length ? draft.tags.join(', ') : prev.tags,
+    }));
+
+    setVoiceDraftMeta({
+      enabled: true,
+      originalTranscript: draft.originalTranscript || '',
+      originalLanguage: draft.detectedLanguage || draft.language || 'hi',
+      standardizedText: draft.standardizedText || '',
+      standardizedLanguage: draft.standardizedLanguage || '',
+    });
+  }
+
+  function discardVoiceDraft() {
+    setVoiceDraftMeta(null);
   }
 
   async function useMyLocation() {
@@ -72,6 +105,12 @@ export default function ReportProblem() {
             .filter(Boolean)
         )
       );
+
+      // If created via voice, attach optional voiceInput metadata
+      if (voiceDraftMeta?.enabled) {
+        data.append('voiceInput', JSON.stringify(voiceDraftMeta));
+      }
+
       files.images.forEach((f) => data.append('images', f));
       files.videos.forEach((f) => data.append('videos', f));
       files.documents.forEach((f) => data.append('documents', f));
@@ -95,8 +134,36 @@ export default function ReportProblem() {
     <section className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <h1 className="text-2xl font-bold">Report a Problem</h1>
       <p className="mt-2 text-sm text-gray-600">
-        Describe a societal challenge in your area of Jharkhand.
+        Describe a societal challenge in your area of Jharkhand using text or voice.
       </p>
+
+      {/* Input Mode Switcher */}
+      {!submittedId && !duplicateWarning && (
+        <div className="mt-6 flex border-2 border-nb-ink bg-white p-1 shadow-[3px_3px_0_#111]">
+          <button
+            type="button"
+            onClick={() => setInputMode('manual')}
+            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+              inputMode === 'manual'
+                ? 'border-2 border-nb-ink bg-nb-yellow text-nb-ink shadow-[2px_2px_0_#111]'
+                : 'text-gray-600 hover:text-nb-ink'
+            }`}
+          >
+            ✍️ Type Manually
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode('voice')}
+            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+              inputMode === 'voice'
+                ? 'border-2 border-nb-ink bg-nb-yellow text-nb-ink shadow-[2px_2px_0_#111]'
+                : 'text-gray-600 hover:text-nb-ink'
+            }`}
+          >
+            🎙️ Report by Voice (बोलकर दर्ज करें)
+          </button>
+        </div>
+      )}
 
       {error && (
         <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
@@ -145,7 +212,73 @@ export default function ReportProblem() {
       ) : null}
 
       {!submittedId && !duplicateWarning && (
-      <form onSubmit={onSubmit} className="mt-8 space-y-5">
+        <>
+          {/* Voice Input Section when in voice mode and draft not yet created */}
+          {inputMode === 'voice' && !voiceDraftMeta && (
+            <div className="mt-6">
+              <VoiceRecorder
+                districtHint={form.district}
+                onDraftGenerated={handleVoiceDraftGenerated}
+                onCancel={() => setInputMode('manual')}
+              />
+            </div>
+          )}
+
+          {/* AI-Assisted Voice Draft Review Banner */}
+          {voiceDraftMeta && (
+            <div className="mt-6 rounded-xl border-2 border-johar-green-600 bg-green-50/70 p-4 shadow-[3px_3px_0_#111]">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-johar-green-700 text-xs text-white">
+                    🎙
+                  </span>
+                  <h3 className="font-bold text-sm text-johar-green-800">
+                    AI-assisted draft — please review before submitting
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={discardVoiceDraft}
+                  className="text-xs font-semibold text-red-600 hover:underline"
+                >
+                  🔄 Re-record or discard draft
+                </button>
+              </div>
+
+              {/* Collapsible Original Transcript */}
+              {voiceDraftMeta.originalTranscript && (
+                <div className="mt-3 rounded-lg border border-green-200 bg-white p-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-gray-700">
+                      Original Spoken Transcript ({voiceDraftMeta.originalLanguage}):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowOriginalTranscript((v) => !v)}
+                      className="text-johar-green-700 hover:underline text-[11px]"
+                    >
+                      {showOriginalTranscript ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {showOriginalTranscript && (
+                    <p className="mt-1 text-gray-800 italic whitespace-pre-wrap">
+                      "{voiceDraftMeta.originalTranscript}"
+                    </p>
+                  )}
+                  {voiceDraftMeta.standardizedText && showOriginalTranscript && (
+                    <div className="mt-2 border-t border-gray-100 pt-2 text-[11px] text-gray-600">
+                      <span className="font-semibold text-gray-700">Standardized representation: </span>
+                      {voiceDraftMeta.standardizedText}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Main Challenge Form - always accessible for editing/reviewing */}
+          {(inputMode === 'manual' || voiceDraftMeta) && (
+            <form onSubmit={onSubmit} className="mt-8 space-y-5">
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-gray-700">
             Problem Title *
@@ -352,6 +485,8 @@ export default function ReportProblem() {
           {isSubmitting ? 'Submitting...' : 'Submit Challenge'}
         </button>
       </form>
+      )}
+      </>
       )}
     </section>
   );
