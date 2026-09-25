@@ -12,6 +12,7 @@ import collaborationRequestRoutes from './collaborationRequest.routes.js';
 import adminRoutes from './admin.routes.js';
 import solutionRoutes from './solution.routes.js';
 import voiceRoutes from './voice.routes.js';
+import governmentRoutes from './government.routes.js';
 
 const router = Router();
 
@@ -27,5 +28,6 @@ router.use('/universities', universityRoutes);
 router.use('/industries', industryRoutes);
 router.use('/collaboration-requests', collaborationRequestRoutes);
 router.use('/admin', adminRoutes);
+router.use('/government', governmentRoutes);
 
 export default router;

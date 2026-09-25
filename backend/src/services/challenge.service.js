@@ -11,6 +11,7 @@ import { queueDuplicateCheck } from './duplicate.service.js';
 import University from '../models/University.js';
 import Project from '../models/Project.js';
 import { findUniversityMatchesForChallenge } from './matching.service.js';
+import { CATEGORY_DEPARTMENT_MAP } from './governmentScopeService.js';
 
 const SEVERITIES = ['low', 'medium', 'high', 'critical'];
 const LANGUAGES = ['en', 'hi', 'bn', 'od', 'san', 'nag', 'kur', 'ho', 'mundari'];
@@ -307,9 +308,45 @@ export async function getChallengeById(id) {
   obj.location = roundCoordinates(challenge.location);
   // linked solution project (public summary) for the Challenge → Project flow
   obj.solutionProject = await Project.findOne({ challenge: challenge._id })
-    .select('title status currentProgress university')
+    .select('title status currentProgress university governmentOwnership')
     .populate('university', 'name')
+    .populate('governmentOwnership.assignedAuthority', 'name email role department district organization phone')
     .lean();
+
+  // Determine current authority and department info
+  const gov = obj.solutionProject?.governmentOwnership;
+  const defaultDepartment = CATEGORY_DEPARTMENT_MAP[challenge.category] || 'District Administration';
+
+  obj.authorityInfo = {
+    isExplicit: Boolean(gov?.department || gov?.assignedAuthority),
+    authorityLevel: gov?.authorityLevel || 'district',
+    department: gov?.department || defaultDepartment,
+    district: gov?.district || challenge.district || 'Jharkhand',
+    block: gov?.block || null,
+    localBody: gov?.localBody || null,
+    assignedOfficer: gov?.assignedAuthority || null,
+    assignedAt: gov?.assignedAt || null,
+    notes: gov?.notes || null,
+  };
+
+  // Fetch escalations linked to project or challenge
+  const Escalation = mongoose.model('Escalation');
+  const escalationQuery = obj.solutionProject
+    ? { $or: [{ project: obj.solutionProject._id }, { challenge: challenge._id }] }
+    : { challenge: challenge._id };
+
+  const escalations = await Escalation.find(escalationQuery)
+    .sort({ createdAt: -1 })
+    .populate('acknowledgedBy', 'name role department')
+    .populate('resolvedBy', 'name role department')
+    .lean();
+
+  obj.escalations = escalations;
+  const activeEscalation = escalations.find(
+    (e) => e.status === 'open' || e.status === 'acknowledged'
+  );
+  obj.currentEscalationLevel = activeEscalation ? activeEscalation.escalatedTo : 'none';
+
   // linked Local Samvaad discussion, if any
   const Discussion = mongoose.model('Discussion');
   obj.relatedDiscussion = await Discussion.findOne({

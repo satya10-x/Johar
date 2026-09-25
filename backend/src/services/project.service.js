@@ -13,6 +13,7 @@ import Milestone from '../models/Milestone.js';
 
 import ApiError from '../utils/ApiError.js';
 import { matchIndustries as matchIndustriesAI } from './groqService.js';
+import { triggerProjectRiskUpdateOnEvent } from './projectRiskService.js';
 
 export const STATUS_TRANSITIONS = {
   proposed: ['approved', 'cancelled'],
@@ -29,10 +30,17 @@ export const STATUS_TRANSITIONS = {
 const PROJECT_STATUSES = Object.keys(STATUS_TRANSITIONS);
 const MILESTONE_STATUSES = ['pending', 'in_progress', 'completed', 'delayed'];
 
-async function recomputeProgress(projectId) {
-  const milestones = await Milestone.find({ project: projectId }).select('status');
+export async function recomputeProgress(projectId) {
+  const milestones = await Milestone.find({ project: projectId }).select(
+    'status executionStatus verificationStatus'
+  );
   if (!milestones.length) return null;
-  const completed = milestones.filter((m) => m.status === 'completed').length;
+  const completed = milestones.filter(
+    (m) =>
+      m.status === 'completed' ||
+      m.executionStatus === 'completed' ||
+      m.verificationStatus === 'verified'
+  ).length;
   return Math.round((completed / milestones.length) * 100);
 }
 
@@ -509,6 +517,7 @@ export async function changeProjectStatus(projectId, user, newStatus) {  if (!PR
     project.currentProgress = 100;
   }
   await project.save();
+  triggerProjectRiskUpdateOnEvent(projectId, 'status_changed');
   return project;
 }
 
@@ -607,6 +616,17 @@ function sanitizeMilestoneBody(body, { requireCore = false } = {}) {
       : [];
   }
   if (body.notes !== undefined) payload.notes = body.notes;
+  if (body.executionStatus !== undefined) {
+    if (!['pending', 'in_progress', 'completed', 'delayed', 'blocked'].includes(body.executionStatus)) {
+      throw new ApiError(400, 'Invalid executionStatus');
+    }
+    payload.executionStatus = body.executionStatus;
+    if (body.executionStatus === 'completed') {
+      payload.status = 'completed';
+      payload.completedDate = payload.completedDate || new Date();
+    }
+  }
+  if (body.blockedReason !== undefined) payload.blockedReason = body.blockedReason;
   return payload;
 }
 
@@ -625,6 +645,7 @@ export async function createMilestone(projectId, user, body) {
 
   const progress = await recomputeProgress(projectId);
   if (progress !== null) await Project.updateOne({ _id: projectId }, { currentProgress: progress });
+  triggerProjectRiskUpdateOnEvent(projectId, 'milestone_created');
   return milestone;
 }
 
@@ -658,6 +679,7 @@ export async function updateMilestone(milestoneId, user, body) {
 
   const progress = await recomputeProgress(projectId);
   if (progress !== null) await Project.updateOne({ _id: projectId }, { currentProgress: progress });
+  triggerProjectRiskUpdateOnEvent(projectId, 'milestone_updated');
   return milestone;
 }
 
@@ -667,4 +689,5 @@ export async function deleteMilestone(milestoneId, user) {
 
   const progress = await recomputeProgress(projectId);
   if (progress !== null) await Project.updateOne({ _id: projectId }, { currentProgress: progress });
+  triggerProjectRiskUpdateOnEvent(projectId, 'milestone_deleted');
 }

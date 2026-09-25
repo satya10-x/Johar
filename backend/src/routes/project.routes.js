@@ -24,6 +24,9 @@ import {
   patchImpact,
   generateImpactSummary,
   replicationOpportunities,
+  analyzeRisk,
+  getRisk,
+  getRiskSummary,
 } from '../controllers/project.controller.js';
 import { requireAuth, authorizeRoles } from '../middleware/auth.middleware.js';
 import { optionalAuth } from '../middleware/optionalAuth.middleware.js';
@@ -34,6 +37,9 @@ router
   .route('/')
   .get(list)
   .post(requireAuth, authorizeRoles('faculty', 'university', 'admin'), create);
+
+// Risk summary endpoint MUST precede /:id to avoid being captured as an ID
+router.get('/risk-summary', requireAuth, getRiskSummary);
 
 router.get('/:id', optionalAuth, getById);
 
@@ -59,5 +65,9 @@ router.post('/:id/impact', requireAuth, createImpact);
 router.patch('/:id/impact', requireAuth, patchImpact);
 router.post('/:id/impact/summary', requireAuth, generateImpactSummary);
 router.get('/:id/replication-opportunities', optionalAuth, replicationOpportunities);
+
+// AI-assisted project risk detection
+router.post('/:id/risk-analysis', requireAuth, analyzeRisk);
+router.get('/:id/risk-analysis', requireAuth, getRisk);
 
 export default router;

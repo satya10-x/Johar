@@ -1,5 +1,13 @@
 import asyncHandler from '../utils/asyncHandler.js';
+import Project from '../models/Project.js';
+import ApiError from '../utils/ApiError.js';
 import CollaborationRequest from '../models/CollaborationRequest.js';
+import { canViewProject } from '../services/governmentScopeService.js';
+import {
+  assessProjectRisk,
+  getProjectRiskHistory,
+  getProjectsRiskSummary,
+} from '../services/projectRiskService.js';
 import {
   createProject,
   listProjects,
@@ -176,3 +184,45 @@ export const replicationOpportunities = asyncHandler(async (req, res) => {
   const data = await findReplicationOpportunities(req.params.id);
   res.json({ success: true, ...data });
 });
+
+// ---------- AI Project Risk Detection ----------
+
+export const analyzeRisk = asyncHandler(async (req, res) => {
+  const project = await Project.findById(req.params.id);
+  if (!project) throw new ApiError(404, 'Project not found');
+  if (!canViewProject(req.user, project)) {
+    throw new ApiError(403, 'You do not have permission to analyze this project');
+  }
+
+  const assessment = await assessProjectRisk(req.params.id, req.user, { force: true });
+  const data = await getProjectRiskHistory(req.params.id, false, req.user);
+
+  res.json({
+    success: true,
+    message: 'AI-assisted project risk assessment completed',
+    assessment,
+    trend: data.trend,
+  });
+});
+
+export const getRisk = asyncHandler(async (req, res) => {
+  const project = await Project.findById(req.params.id);
+  if (!project) throw new ApiError(404, 'Project not found');
+  if (!canViewProject(req.user, project)) {
+    throw new ApiError(403, 'You do not have permission to view risk analysis for this project');
+  }
+
+  const data = await getProjectRiskHistory(req.params.id, true, req.user);
+  res.json({
+    success: true,
+    latest: data.latest,
+    trend: data.trend,
+    history: data.history,
+  });
+});
+
+export const getRiskSummary = asyncHandler(async (req, res) => {
+  const data = await getProjectsRiskSummary(req.query, req.user);
+  res.json({ success: true, ...data });
+});
+

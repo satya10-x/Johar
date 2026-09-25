@@ -22,6 +22,8 @@ import Samvaad from './pages/Samvaad.jsx';
 import SamvaadDetail from './pages/SamvaadDetail.jsx';
 import CreateDiscussion from './pages/CreateDiscussion.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import GovernmentHierarchy from './pages/GovernmentHierarchy.jsx';
+import LocalProjects from './pages/LocalProjects.jsx';
 import Solutions from './pages/Solutions.jsx';
 import SolutionDetail from './pages/SolutionDetail.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -53,11 +55,15 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/samvaad/new" element={<CreateDiscussion />} />
         </Route>
+        <Route path="/local-projects" element={<LocalProjects />} />
+        <Route path="/projects/:id/track" element={<LocalProjects />} />
         <Route element={<ProtectedRoute roles={['university', 'admin']}/>}>
           <Route path="/university/challenges" element={<UniversityChallenges />} />
         </Route>
         <Route element={<ProtectedRoute roles={['government', 'admin']} />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/hierarchy" element={<GovernmentHierarchy />} />
+          <Route path="/government/hierarchy" element={<GovernmentHierarchy />} />
         </Route>
         <Route element={<ProtectedRoute roles={['industry', 'admin']}/>}>
           <Route path="/industry/projects" element={<IndustryProjects />} />

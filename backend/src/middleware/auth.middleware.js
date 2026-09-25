@@ -39,3 +39,21 @@ export function authorizeRoles(...roles) {
     next();
   };
 }
+
+export async function optionalAuth(req, res, next) {
+  try {
+    const header = req.headers.authorization || '';
+    const [scheme, token] = header.split(' ');
+    if (scheme === 'Bearer' && token) {
+      const payload = verifyToken(token);
+      const user = await User.findById(payload.id);
+      if (user && user.isActive) {
+        req.user = user;
+      }
+    }
+    next();
+  } catch {
+    next();
+  }
+}
+

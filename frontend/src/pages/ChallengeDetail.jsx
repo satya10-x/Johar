@@ -12,6 +12,7 @@ import {
 } from '../services/challengeService.js';
 import { getUniversityMatches } from '../services/universityService.js';
 import { listDiscussions } from '../services/discussionService.js';
+import { createGovernmentEscalation } from '../services/governmentService.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { CATEGORIES } from '../utils/constants.js';
 
@@ -46,8 +47,20 @@ export default function ChallengeDetail() {
   const [isMatching, setIsMatching] = useState(false);
   const [localDiscussion, setLocalDiscussion] = useState(null);
   const [showVoiceDetails, setShowVoiceDetails] = useState(false);
+  const [showEscalateModal, setShowEscalateModal] = useState(false);
+  const [escalateData, setEscalateData] = useState({
+    targetLevel: 'district',
+    severity: 'medium',
+    reason: '',
+    actionRequired: '',
+  });
+  const [isEscalating, setIsEscalating] = useState(false);
+  const [escalateError, setEscalateError] = useState('');
+  const [escalateSuccess, setEscalateSuccess] = useState('');
 
   const isAuthenticated = Boolean(user);
+  const canEscalate = user && ['government', 'admin', 'university', 'faculty'].includes(user.role);
+  const isGovOrAdmin = user && ['government', 'admin'].includes(user.role);
 
   const ai = challenge?.aiClassification;
   const canStartProject =
@@ -180,6 +193,40 @@ export default function ChallengeDetail() {
     }
   }
 
+  async function handleEscalateSubmit(e) {
+    e.preventDefault();
+    if (!escalateData.reason.trim()) {
+      setEscalateError('Please provide a specific reason for escalation.');
+      return;
+    }
+    setIsEscalating(true);
+    setEscalateError('');
+    setEscalateSuccess('');
+    try {
+      await createGovernmentEscalation({
+        challengeId: challenge._id,
+        projectId: challenge.solutionProject?._id || undefined,
+        targetLevel: escalateData.targetLevel,
+        severity: escalateData.severity,
+        reason: escalateData.reason.trim(),
+        actionRequired: escalateData.actionRequired.trim() || undefined,
+      });
+      setEscalateSuccess('Challenge has been successfully escalated to the government authority.');
+      // Refresh challenge data to display new escalation
+      const res = await getChallenge(id);
+      setChallenge(res.challenge);
+      setTimeout(() => {
+        setShowEscalateModal(false);
+        setEscalateSuccess('');
+        setEscalateData({ targetLevel: 'district', severity: 'medium', reason: '', actionRequired: '' });
+      }, 1500);
+    } catch (err) {
+      setEscalateError(err.response?.data?.message || 'Failed to submit escalation.');
+    } finally {
+      setIsEscalating(false);
+    }
+  }
+
   if (isLoading) {
     return <p className="py-24 text-center text-gray-500">Loading challenge...</p>;
   }
@@ -299,22 +346,35 @@ export default function ChallengeDetail() {
       <section className="mt-8 rounded-xl border border-johar-green-600/20 bg-johar-green-50 p-5">
         <h2 className="font-semibold">Discuss locally</h2>
         {challenge.solutionProject && (
-          <p className="mt-2 text-sm">
-            <span className="font-semibold">Solution Project: </span>
-            <Link
-              to={`/projects/${challenge.solutionProject._id}`}
-              className="font-medium text-johar-green-700 hover:underline"
-            >
-              {challenge.solutionProject.title}
-            </Link>
-            <span className="ml-2 capitalize text-xs text-gray-500">
-              {String(challenge.solutionProject.status).replace(/_/g, ' ')} ·{' '}
-              {challenge.solutionProject.currentProgress || 0}% complete
-              {challenge.solutionProject.university?.name
-                ? ` · ${challenge.solutionProject.university.name}`
-                : ''}
-            </span>
-          </p>
+          <div className="mt-3 rounded-lg border-2 border-nb-ink bg-white p-3.5 shadow-[2px_2px_0_#111]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                  Active Solution Project
+                </span>
+                <p className="mt-1 text-sm font-bold text-gray-900">
+                  <Link
+                    to={`/projects/${challenge.solutionProject._id}`}
+                    className="hover:underline text-johar-green-700 font-bold"
+                  >
+                    {challenge.solutionProject.title}
+                  </Link>
+                </p>
+                <p className="text-xs text-gray-500">
+                  Status: <strong className="capitalize">{String(challenge.solutionProject.status).replace(/_/g, ' ')}</strong> · Progress: <strong>{challenge.solutionProject.currentProgress || 0}%</strong>
+                  {challenge.solutionProject.university?.name ? ` · ${challenge.solutionProject.university.name}` : ''}
+                </p>
+              </div>
+
+              {/* Requirement 14: Track Solution */}
+              <Link
+                to={`/local-projects?project=${challenge.solutionProject._id}`}
+                className="flex items-center gap-1.5 rounded-lg border-2 border-nb-ink bg-nb-yellow px-3 py-1.5 text-xs font-black uppercase tracking-wider text-nb-ink shadow-[2px_2px_0_#111] hover:bg-yellow-400"
+              >
+                🔍 Track Solution ➔
+              </Link>
+            </div>
+          </div>
         )}
         {localDiscussion ? (
           <p className="mt-2 text-sm">
@@ -350,6 +410,180 @@ export default function ChallengeDetail() {
             )}
           </>
         )}
+      </section>
+
+      {/* Government Authority & Escalation Card */}
+      <section className="mt-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-base">🏛️</span>
+            <div>
+              <h2 className="font-bold text-gray-900 leading-tight">Government Authority & Oversight</h2>
+              <p className="text-xs text-gray-500">Jurisdiction, department mapping & administrative escalation status</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Escalation Level Badge */}
+            {challenge.currentEscalationLevel && challenge.currentEscalationLevel !== 'none' ? (
+              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${
+                challenge.currentEscalationLevel === 'state'
+                  ? 'bg-red-100 text-red-800 border border-red-300 animate-pulse'
+                  : challenge.currentEscalationLevel === 'district'
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                    : 'bg-blue-100 text-blue-800 border border-blue-300'
+              }`}>
+                <span>⚠️</span> Escalated: {challenge.currentEscalationLevel} Level
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600"></span> Standard Oversight
+              </span>
+            )}
+
+            {canEscalate && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEscalateError('');
+                  setShowEscalateModal(true);
+                }}
+                className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-red-700 transition"
+              >
+                🚨 Escalate
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Authority Details Grid */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="rounded-lg bg-gray-50 p-3 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500 font-medium">Responsible Department</span>
+              {challenge.authorityInfo?.isExplicit ? (
+                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                  Explicit Assignment
+                </span>
+              ) : (
+                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200" title="Suggested from challenge category. Existing project ownership is preserved.">
+                  Category Default
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {challenge.authorityInfo?.departmentName || 'General Administration'}
+            </p>
+            {challenge.authorityInfo?.ministry && (
+              <p className="text-[11px] text-gray-500">{challenge.authorityInfo.ministry}</p>
+            )}
+            {!challenge.authorityInfo?.isExplicit && (
+              <p className="mt-1 text-[10px] text-gray-400 italic">
+                * Suggested department based on category. Existing project ownership will not be overwritten automatically.
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-lg bg-gray-50 p-3 border border-gray-100">
+            <span className="text-gray-500 font-medium">Administrative Jurisdiction</span>
+            <p className="mt-1 text-sm font-semibold text-gray-900 capitalize">
+              {challenge.authorityInfo?.level || 'district'} Level · {challenge.district || challenge.authorityInfo?.district || 'Jharkhand'}
+            </p>
+            <div className="mt-1 text-[11px] text-gray-600">
+              <span className="font-medium">Assigned Officer: </span>
+              {challenge.authorityInfo?.officer ? (
+                <span className="font-semibold text-gray-900">
+                  {challenge.authorityInfo.officer.name} ({challenge.authorityInfo.officer.designation || 'Government Representative'})
+                </span>
+              ) : (
+                <span className="text-gray-400 italic">Departmental pool / unassigned</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Link to Government Hierarchy Page for Gov/Admin */}
+        {isGovOrAdmin && (
+          <div className="mt-3 flex items-center justify-between rounded-lg bg-emerald-50/60 px-3.5 py-2 border border-emerald-100 text-xs">
+            <span className="text-emerald-900">
+              Authorized personnel can inspect state/district officer chains and department structures.
+            </span>
+            <Link
+              to="/government/hierarchy"
+              className="font-bold text-emerald-700 hover:text-emerald-900 hover:underline shrink-0"
+            >
+              Open Government Hierarchy ➔
+            </Link>
+          </div>
+        )}
+
+        {/* Escalation History Timeline */}
+        <div className="mt-5 border-t border-gray-100 pt-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+              Escalation History ({challenge.escalations?.length || 0})
+            </h3>
+            {challenge.escalations?.length > 0 && (
+              <span className="text-[11px] text-gray-400">Chronological administrative interventions</span>
+            )}
+          </div>
+
+          {challenge.escalations && challenge.escalations.length > 0 ? (
+            <div className="mt-3 space-y-2.5">
+              {challenge.escalations.map((esc) => (
+                <div
+                  key={esc._id}
+                  className="rounded-lg border border-gray-200 bg-white p-3 text-xs shadow-xs"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`inline-block h-2 w-2 rounded-full ${
+                        esc.status === 'active' ? 'bg-red-500' : esc.status === 'resolved' ? 'bg-green-500' : 'bg-amber-500'
+                      }`} />
+                      <span className="font-bold text-gray-900 capitalize">
+                        Escalated to {esc.targetLevel || 'district'} tier
+                      </span>
+                      <span className={`rounded px-1.5 py-0.2 text-[10px] font-bold uppercase ${
+                        esc.severity === 'critical' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {esc.severity}
+                      </span>
+                      <span className="rounded bg-blue-50 px-1.5 py-0.2 text-[10px] text-blue-700 font-medium">
+                        {esc.trigger || 'manual'}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-gray-400">
+                      {new Date(esc.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <p className="mt-1.5 text-gray-800">{esc.reason}</p>
+
+                  {esc.actionRequired && (
+                    <p className="mt-1 text-[11px] text-gray-600 bg-gray-50 p-1.5 rounded">
+                      <strong className="text-gray-700">Requested Action: </strong> {esc.actionRequired}
+                    </p>
+                  )}
+
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-gray-400 border-t border-gray-50 pt-1.5">
+                    <span>
+                      Status: <strong className="capitalize text-gray-700">{esc.status}</strong>
+                      {esc.raisedBy?.name ? ` · Raised by ${esc.raisedBy.name}` : ''}
+                    </span>
+                    {esc.resolvedAt && (
+                      <span className="text-emerald-700 font-medium">
+                        Resolved on {new Date(esc.resolvedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-gray-400 italic">
+              No escalations recorded. The challenge is currently managed under routine oversight.
+            </p>
+          )}
+        </div>
       </section>
 
       {(challenge.images?.length > 0 ||
@@ -620,7 +854,7 @@ export default function ChallengeDetail() {
                   minLength={10}
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}
-                  className={`${inputClass}`}
+                  className="mt-1 w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-johar-green-700 focus:outline-none"
                 />
                 <button
                   type="button"
@@ -718,6 +952,117 @@ export default function ChallengeDetail() {
             {isDeleting ? 'Deleting...' : 'Delete'}
           </button>
         </footer>
+      )}
+
+      {/* Escalation Modal */}
+      {showEscalateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-xl border-2 border-nb-ink bg-white p-6 shadow-[4px_4px_0_#111]">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                  <span>🚨</span> Escalate Challenge
+                </h3>
+                <p className="mt-1 text-xs text-gray-600">
+                  Escalate this issue to higher administrative tiers (District Magistrate / State Department) for rapid intervention.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEscalateModal(false)}
+                className="text-gray-400 hover:text-gray-700 font-bold text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {escalateError && (
+              <div className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-700 border border-red-200">
+                {escalateError}
+              </div>
+            )}
+            {escalateSuccess && (
+              <div className="mt-3 rounded-lg bg-green-50 p-3 text-xs text-green-700 border border-green-200">
+                {escalateSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleEscalateSubmit} className="mt-4 space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Target Administrative Level</label>
+                  <select
+                    value={escalateData.targetLevel}
+                    onChange={(e) => setEscalateData({ ...escalateData, targetLevel: e.target.value })}
+                    className="w-full rounded-lg border border-gray-300 p-2 text-xs focus:border-emerald-600 focus:outline-none"
+                  >
+                    <option value="block">Block Level (BDO / Officers)</option>
+                    <option value="district">District Level (DC / DDC)</option>
+                    <option value="state">State Level (Secretariat / Department)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Severity</label>
+                  <select
+                    value={escalateData.severity}
+                    onChange={(e) => setEscalateData({ ...escalateData, severity: e.target.value })}
+                    className="w-full rounded-lg border border-gray-300 p-2 text-xs focus:border-emerald-600 focus:outline-none"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical / Urgent</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  Reason for Escalation <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={escalateData.reason}
+                  onChange={(e) => setEscalateData({ ...escalateData, reason: e.target.value })}
+                  placeholder="Detail why standard procedures have stalled, SLA breaches, or why urgent oversight is required..."
+                  className="w-full rounded-lg border border-gray-300 p-2 text-xs focus:border-emerald-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  Requested Action / Intervention
+                </label>
+                <input
+                  type="text"
+                  value={escalateData.actionRequired}
+                  onChange={(e) => setEscalateData({ ...escalateData, actionRequired: e.target.value })}
+                  placeholder="e.g., Emergency funds allocation, site visit by DDC, inter-departmental clearance"
+                  className="w-full rounded-lg border border-gray-300 p-2 text-xs focus:border-emerald-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="mt-4 flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowEscalateModal(false)}
+                  disabled={isEscalating}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEscalating}
+                  className="rounded-lg bg-red-600 px-4 py-1.5 font-bold text-white shadow-sm hover:bg-red-700 transition disabled:opacity-50"
+                >
+                  {isEscalating ? 'Escalating...' : 'Submit Escalation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </article>
   );

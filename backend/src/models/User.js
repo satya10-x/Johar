@@ -49,6 +49,32 @@ const userSchema = new Schema(
       trim: true,
       index: true,
     },
+    // Optional government authority hierarchy fields
+    authorityLevel: {
+      type: String,
+      enum: ['state', 'district', 'block', 'local_body', 'department'],
+      index: true,
+    },
+    department: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+    state: {
+      type: String,
+      trim: true,
+      default: 'Jharkhand',
+    },
+    block: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+    localBody: {
+      type: String,
+      trim: true,
+      index: true,
+    },
     location: geoLocationField(),
     organization: {
       type: String,
@@ -80,6 +106,7 @@ userSchema.index({ location: '2dsphere' });
 
 export const USER_ROLES = userSchema.path('role').enumValues;
 export const SELF_REGISTRATION_ROLES = ['citizen', 'student', 'faculty', 'university', 'industry'];
+export const AUTHORITY_LEVELS = ['state', 'district', 'block', 'local_body', 'department'];
 
 const SALT_ROUNDS = 10;
 

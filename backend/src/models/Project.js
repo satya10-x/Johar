@@ -246,6 +246,48 @@ const projectSchema = new Schema(
       type: impactSchema,
       default: undefined,
     },
+    governmentOwnership: {
+      department: {
+        type: String,
+        trim: true,
+      },
+      authorityLevel: {
+        type: String,
+        enum: ['state', 'district', 'block', 'local_body', 'department'],
+      },
+      assignedAuthority: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      state: {
+        type: String,
+        trim: true,
+        default: 'Jharkhand',
+      },
+      district: {
+        type: String,
+        trim: true,
+      },
+      block: {
+        type: String,
+        trim: true,
+      },
+      localBody: {
+        type: String,
+        trim: true,
+      },
+      assignedAt: {
+        type: Date,
+      },
+      assignedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      notes: {
+        type: String,
+        trim: true,
+      },
+    },
   },
   {
     timestamps: true,
@@ -254,5 +296,7 @@ const projectSchema = new Schema(
 
 projectSchema.index({ status: 1, university: 1 });
 projectSchema.index({ 'deploymentDetails.location': '2dsphere' });
+projectSchema.index({ 'governmentOwnership.district': 1 });
+projectSchema.index({ 'governmentOwnership.department': 1 });
 
 export default mongoose.model('Project', projectSchema);

@@ -8,6 +8,7 @@ import {
   getPriorityChallenges,
 } from '../services/adminService.js';
 import { CATEGORIES, DISTRICTS } from '../utils/constants.js';
+import GovernmentMonitoring from '../components/GovernmentMonitoring.jsx';
 
 const selectClass =
   'rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm w-full sm:w-auto';
@@ -72,6 +73,7 @@ const STATUS_STYLES = {
 };
 
 export default function AdminDashboard() {
+  const [dashboardMode, setDashboardMode] = useState('governance'); // 'governance' | 'analytics'
   const [district, setDistrict] = useState('');
   const [dashboard, setDashboard] = useState(null);
   const [challengeStats, setChallengeStats] = useState(null);
@@ -131,37 +133,85 @@ export default function AdminDashboard() {
             participation.
           </p>
         </div>
-        <select
-          value={district}
-          onChange={(e) => {
-            setDistrict(e.target.value);
-            setPriorityPage(1);
-          }}
-          className={selectClass}
-          aria-label="District filter"
-        >
-          <option value="">All Jharkhand</option>
-          {DISTRICTS.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/government/hierarchy"
+            className="flex items-center gap-1.5 rounded-lg border-2 border-nb-ink bg-nb-yellow px-3 py-1.5 text-xs font-black uppercase tracking-wider text-nb-ink shadow-[2px_2px_0_#111] hover:bg-yellow-400"
+          >
+            🏢 Government Hierarchy ➔
+          </Link>
+          {dashboardMode === 'analytics' && (
+            <select
+              value={district}
+              onChange={(e) => {
+                setDistrict(e.target.value);
+                setPriorityPage(1);
+              }}
+              className={selectClass}
+              aria-label="District filter"
+            >
+              <option value="">All Jharkhand</option>
+              {DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
-      {error && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-      )}
+      {/* Mode Switcher */}
+      <div className="mt-6 flex border-2 border-nb-ink bg-white p-1 shadow-[3px_3px_0_#111] overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setDashboardMode('governance')}
+          className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-all min-w-[190px] ${
+            dashboardMode === 'governance'
+              ? 'border-2 border-nb-ink bg-nb-yellow text-nb-ink shadow-[2px_2px_0_#111]'
+              : 'text-gray-600 hover:text-nb-ink'
+          }`}
+        >
+          🏛️ Governance & Work Monitoring
+        </button>
+        <Link
+          to="/government/hierarchy"
+          className="flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-all text-center text-gray-700 hover:text-nb-ink hover:bg-nb-yellow/20 flex items-center justify-center gap-1 border-r border-l border-gray-200 min-w-[190px]"
+        >
+          🏢 Government Hierarchy ➔
+        </Link>
+        <button
+          type="button"
+          onClick={() => setDashboardMode('analytics')}
+          className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-all min-w-[190px] ${
+            dashboardMode === 'analytics'
+              ? 'border-2 border-nb-ink bg-nb-yellow text-nb-ink shadow-[2px_2px_0_#111]'
+              : 'text-gray-600 hover:text-nb-ink'
+          }`}
+        >
+          📊 Platform & District Analytics
+        </button>
+      </div>
 
-      {isLoading ? (
-        <p className="py-24 text-center text-gray-500">Loading dashboard...</p>
+      {dashboardMode === 'governance' ? (
+        <div className="mt-6">
+          <GovernmentMonitoring />
+        </div>
       ) : (
         <>
-          {/* Top-level cards */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatCard label="Total Challenges" value={t?.totalChallenges ?? 0} />
-            <StatCard label="Active Challenges" value={t?.activeChallenges ?? 0} />
-            <StatCard label="Projects" value={t?.totalProjects ?? 0} />
+          {error && (
+            <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+          )}
+
+          {isLoading ? (
+            <p className="py-24 text-center text-gray-500">Loading dashboard...</p>
+          ) : (
+            <>
+              {/* Top-level cards */}
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <StatCard label="Total Challenges" value={t?.totalChallenges ?? 0} />
+                <StatCard label="Active Challenges" value={t?.activeChallenges ?? 0} />
+                <StatCard label="Projects" value={t?.totalProjects ?? 0} />
             <StatCard label="Completed Solutions" value={t?.totalSolutions ?? 0} />
             <StatCard label="Universities" value={t?.totalUniversities ?? 0} />
             <StatCard label="Industry Partners" value={t?.totalIndustries ?? 0} />
@@ -417,6 +467,8 @@ export default function AdminDashboard() {
           </div>
         </>
       )}
+    </>
+  )}
     </section>
   );
 }

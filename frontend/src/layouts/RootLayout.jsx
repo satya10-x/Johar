@@ -149,6 +149,9 @@ export default function RootLayout() {
           <NavLink to="/projects" className={drawerLinkClass} onClick={closeMenu}>
             Projects
           </NavLink>
+          <NavLink to="/local-projects" className={drawerLinkClass} onClick={closeMenu}>
+            Track Local Work
+          </NavLink>
           <NavLink to="/solutions" className={drawerLinkClass} onClick={closeMenu}>
             Solutions
           </NavLink>
@@ -175,9 +178,14 @@ export default function RootLayout() {
                 </NavLink>
               )}
               {(user?.role === 'government' || user?.role === 'admin') && (
-                <NavLink to="/admin/dashboard" className={drawerLinkClass} onClick={closeMenu}>
-                  Gov Dashboard
-                </NavLink>
+                <>
+                  <NavLink to="/admin/dashboard" className={drawerLinkClass} onClick={closeMenu}>
+                    Gov Dashboard
+                  </NavLink>
+                  <NavLink to="/government/hierarchy" className={drawerLinkClass} onClick={closeMenu}>
+                    Government Hierarchy
+                  </NavLink>
+                </>
               )}
               <div className="mt-3 border-t-2 border-dashed border-gray-300 pt-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">
                 Account

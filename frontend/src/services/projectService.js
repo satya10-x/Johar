@@ -86,3 +86,17 @@ export function generateImpactSummary(id) {
 export function getReplicationOpportunities(id) {
   return api.get(`/projects/${id}/replication-opportunities`).then((res) => res.data);
 }
+
+// ---------- AI Project Risk Detection ----------
+
+export function getProjectRisk(projectId) {
+  return api.get(`/projects/${projectId}/risk-analysis`).then((res) => res.data);
+}
+
+export function analyzeProjectRisk(projectId) {
+  return api.post(`/projects/${projectId}/risk-analysis`).then((res) => res.data);
+}
+
+export function getProjectsRiskSummary(params = {}) {
+  return api.get('/projects/risk-summary', { params }).then((res) => res.data);
+}
